@@ -1,0 +1,149 @@
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    padding: 24px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    background: #f4f4f5;
+    color: #18181b;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+.topbar {
+    width: 100%;
+    max-width: 900px;
+    display: flex;
+    align-items: center;
+    justify-content: end;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.brand { font-weight: 700; font-size: 18px; }
+
+.topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.nav-link {
+    font-size: 14px;
+    color: #2563eb;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.nav-link:hover { text-decoration: underline; }
+
+.user-badge {
+    font-size: 14px;
+    color: #52525b;
+    background: #e4e4e7;
+    padding: 6px 12px;
+    border-radius: 999px;
+}
+
+.user-badge #user-id { font-weight: 600; color: #18181b; }
+
+.container {
+    margin-top: 24px;
+    width: 100%;
+    max-width: 900px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+#title {
+    margin: 0;
+    font-size: clamp(20px, 5vw, 28px);
+    font-weight: 600;
+    line-height: 1.2;
+    min-height: 1.2em;
+    word-break: break-word;
+    text-align: center;
+}
+
+.player-wrap {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background: #000;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+#player {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    display: block;
+}
+
+.controls {
+    display: flex;
+    gap: 8px;
+}
+
+#id-input {
+    flex: 1;
+    min-width: 0;
+    padding: 12px 14px;
+    font-size: 16px;
+    border: 1px solid #d4d4d8;
+    border-radius: 8px;
+    background: #fff;
+    color: #18181b;
+}
+
+#id-input:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+#load-btn {
+    padding: 12px 22px;
+    font-size: 16px;
+    border: 0;
+    border-radius: 8px;
+    background: #2563eb;
+    color: #fff;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+#load-btn:hover { background: #1d4ed8; }
+#load-btn:active { background: #1e40af; }
+
+/* Список «Продолжить смотреть» */
+.page-title { margin: 0; font-size: 22px; font-weight: 700; }
+
+.cards { display: flex; flex-direction: column; gap: 8px; }
+
+.card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px;
+    font-size: 16px;
+    text-decoration: none;
+    color: #18181b;
+    background: #fff;
+    border: 1px solid #d4d4d8;
+    border-radius: 10px;
+}
+
+.card:hover { border-color: #2563eb; }
+.card .card-sub { margin-left: auto; font-size: 13px; color: #71717a; }
+
+.empty { color: #71717a; font-size: 15px; }
+
+@media (max-width: 560px) {
+    .controls { flex-direction: column; }
+    #load-btn { width: 100%; }
+}

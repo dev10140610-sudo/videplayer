@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Плеер</title>
+</head>
+<body>
+<header class="topbar">
+  <nav class="topbar-right">
+    <a id="history-link" class="nav-link" href="history.html">Продолжить смотреть</a>
+    <div class="user-badge">Профиль: <span id="user-id"></span></div>
+  </nav>
+</header>
+<div class="container">
+  <h1 id="title"></h1>
+  <div class="player-wrap">
+    <iframe id="player"
+            src="about:blank"
+            allowfullscreen
+            allow="autoplay; fullscreen"></iframe>
+  </div>
+  <div class="controls">
+    <input id="id-input" type="text" inputmode="numeric" placeholder="Введите id" aria-label="id серии" />
+    <button id="load-btn" type="button">Загрузить</button>
+  </div>
+</div>
+</body>
+</html>

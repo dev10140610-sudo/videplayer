@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+  <title>Primary player</title>
+</head>
+<body>
+<div id="app">
+  <video id="my-video" class="video-js" controls width="720" height="360" data-setup="{}" crossOrigin='use-credentials'>
+    <source src="https://s5.polivai.xyz/vod/films/rik.sienduk.s07e10_586716/hls/index.m3u8" type="application/x-mpegURL" >
+  </video>
+</div>
+<script>
+  const run = () => {
+    const version = prompt('Enter VideoJs Version');
+    const script = document.createElement('script');
+    script.src = `https://vjs.zencdn.net/${version}/video.min.js`;
+    document.body.appendChild(script);
+
+    const link = document.createElement('link');
+    link.src = `https://vjs.zencdn.net/${version}/video-js.css`;
+    document.head.appendChild(link);
+  }
+  run();
+</script>
+</body>
+</html>
