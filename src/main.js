@@ -35,7 +35,7 @@ const fetchPlayerData = async (id, season = 1, episode = 1) => {
   return JSON.parse(match[1]);
 };
 
-const SAVE_INTERVAL = 5;
+const SAVE_INTERVAL = 3;
 
 const run = async () => {
   const iframe = document.getElementById('player');
