@@ -1,6 +1,6 @@
 import './styles.css';
 import { isConfigured } from './firebase.config';
-import { getUserId, listHistory } from './userData';
+import { getUserId, listHistory, removeHistory } from './userData';
 
 const formatTime = (totalSeconds, showHours, cutHours) => {
   if (!Number.isFinite(totalSeconds) || totalSeconds < 0) {
@@ -58,24 +58,50 @@ const run = async () => {
   }
 
   hist.forEach((item) => {
-    const card = document.createElement('a');
+    const card = document.createElement('div');
     card.className = 'card';
+
+    const link = document.createElement('a');
+    link.className = 'card-main';
 
     const params = new URLSearchParams();
     if (uid !== '0') params.set('user', uid);
     params.set('id', String(item.id));
-    card.href = `index.html?${params.toString()}`;
+    link.href = `index.html?${params.toString()}`;
 
     const name = document.createElement('span');
     name.textContent = item.serialName || `id ${item.id}`;
-    card.appendChild(name);
+    link.appendChild(name);
 
     if (item.season != null && item.episode != null) {
       const sub = document.createElement('span');
       sub.className = 'card-sub';
-      sub.textContent = `Сезон ${item.season} · Серия ${item.episode}` + (item.playBack ? ` · Время ${formatTime(item.playBack)}` : '');
-      card.appendChild(sub);
+
+      const episodeText = item.isFeature ? '' : `Сезон ${item.season} · Серия ${item.episode} · `;
+      sub.textContent = episodeText + (item.playBack ? `Время ${formatTime(item.playBack)}` : '');
+      link.appendChild(sub);
     }
+
+    card.appendChild(link);
+
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'card-del';
+    del.setAttribute('aria-label', 'Удалить');
+    del.textContent = '×';
+    del.addEventListener('click', async () => {
+      if (!window.confirm('Удалить из истории?')) return;
+      del.disabled = true;
+      try {
+        await removeHistory(uid, item.id);
+        card.remove();
+        if (!listEl.children.length) emptyEl.hidden = false;
+      } catch (e) {
+        console.error('Не удалось удалить:', e);
+        del.disabled = false;
+      }
+    });
+    card.appendChild(del);
 
     listEl.appendChild(card);
   });

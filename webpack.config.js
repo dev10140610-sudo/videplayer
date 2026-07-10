@@ -86,7 +86,7 @@ module.exports = {
     new CopyWebpackPlugin({
       patterns: [
         { from: 'public/manifest.webmanifest', to: 'manifest.webmanifest' },
-        { from: 'public/icons', to: 'icons' },
+        { from: 'public/icons', to: 'icons', globOptions: { ignore: ['**/vp-icon.png'] } },
       ],
     }),
     isAnalyze && new BundleAnalyzerPlugin(),

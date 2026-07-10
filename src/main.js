@@ -101,7 +101,11 @@ const run = async () => {
       title.textContent = currentSerialName;
 
       if (isConfigured && cur?.id != null) {
-        await recordHistory(uid, { id: cur.id, serialName: currentSerialName });
+        await recordHistory(uid, {
+          id: cur.id,
+          serialName: currentSerialName,
+          isFeature: Boolean(cur.contentType)
+        });
       }
     } catch (e) {
       console.error('Не удалось получить playerData:', e);
@@ -114,7 +118,6 @@ const run = async () => {
 
     const d = event.data;
     if (!d) return;
-    console.log('data', d)
 
     // Плеер сообщил, что готов → отдаём ему сохранённый прогресс (когда он загружен).
     if (d.type === 'vp:ready') {

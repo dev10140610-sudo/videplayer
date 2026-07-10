@@ -12,7 +12,7 @@ export const getUserId = () => {
 
 const histCol = (uid) => collection(db, 'users', uid, 'history');
 
-const HISTORY_LIMIT = 10;
+const HISTORY_LIMIT = 20;
 
 // Лёгкая запись прогресса — просто merge, без чтений. Вызывается часто (каждый тик).
 export const saveProgress = async (uid, entry) => {
@@ -31,6 +31,11 @@ export const recordHistory = async (uid, entry) => {
   const snap = await getDocs(query(histCol(uid), orderBy('updatedAt', 'desc')));
   const extra = snap.docs.slice(HISTORY_LIMIT).filter((d) => d.id !== String(entry.id));
   await Promise.all(extra.map((d) => deleteDoc(d.ref)));
+};
+
+// Удаление записи из истории по id.
+export const removeHistory = async (uid, id) => {
+  await deleteDoc(doc(histCol(uid), String(id)));
 };
 
 // Сохранённый прогресс по конкретному сериалу (или null) — для resume.
