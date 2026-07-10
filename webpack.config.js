@@ -2,6 +2,7 @@ const path = require('path');
 const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
 const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
 const TerserPlugin = require('terser-webpack-plugin');
 
@@ -82,6 +83,12 @@ module.exports = {
       publicPath: '',
     }),
     new CleanWebpackPlugin(),
+    new CopyWebpackPlugin({
+      patterns: [
+        { from: 'public/manifest.webmanifest', to: 'manifest.webmanifest' },
+        { from: 'public/icons', to: 'icons' },
+      ],
+    }),
     isAnalyze && new BundleAnalyzerPlugin(),
   ].filter(Boolean),
   optimization: {
