@@ -41,9 +41,12 @@ const fetchPlayerData = async (id, season = 1, episode = 1) => {
   return JSON.parse(match[1]);
 };
 
-const SAVE_INTERVAL = 5;
+const SAVE_INTERVAL = 3;
 // На сколько секунд отматываем назад время при сохранении заметки.
-const NOTE_REWIND = 5;
+const NOTE_REWIND = 0;
+// При заходе по заметке первые 1.5 мин просмотра НЕ пишем прогресс — чтобы не сбить
+// реальное «последнее время». Досмотрел дольше — дальше пишем штатно.
+const NOTE_GRACE = 300;
 
 export default function PlayerPage() {
   const iframeRef = useRef(null);
@@ -70,6 +73,9 @@ export default function PlayerPage() {
   const pendingResume = useRef(null);
   const playerReady = useRef(false);
   const resumeSent = useRef(false);
+  // Grace-период после захода по заметке: пока true — прогресс не пишем.
+  const noteLaunch = useRef(false);
+  const noteBaseline = useRef(null);
 
   const sendResumeIfReady = () => {
     if (resumeSent.current || !playerReady.current) return;
@@ -84,7 +90,8 @@ export default function PlayerPage() {
   };
 
   // resumeOverride — если задан (запуск из заметки), используем его вместо loadProgress.
-  const load = async (rawId, resumeOverride = null) => {
+  // fromNote — заход по сохранённой заметке (включает grace-период записи прогресса).
+  const load = async (rawId, resumeOverride = null, fromNote = false) => {
     const id = String(rawId ?? '').trim();
     if (!id) return;
 
@@ -101,6 +108,8 @@ export default function PlayerPage() {
     pendingResume.current = null;
     playerReady.current = false;
     resumeSent.current = false;
+    noteLaunch.current = fromNote;
+    noteBaseline.current = null;
 
     // Прогресс для resume: из заметки (override) либо сохранённый по id.
     if (resumeOverride) {
@@ -157,6 +166,14 @@ export default function PlayerPage() {
 
       if (!isConfigured) return;
 
+      // Заход по заметке: первые NOTE_GRACE сек просмотра не пишем прогресс,
+      // чтобы кратковременный просмотр заметки не сбил реальное «последнее время».
+      if (noteLaunch.current) {
+        if (noteBaseline.current == null) noteBaseline.current = d.playBack;
+        if (d.playBack - noteBaseline.current < NOTE_GRACE) return;
+        noteLaunch.current = false; // grace прошёл — дальше пишем штатно
+      }
+
       if (d.playBack - lastSaved.current < SAVE_INTERVAL && d.playBack >= lastSaved.current) return;
       lastSaved.current = d.playBack;
 
@@ -205,7 +222,7 @@ export default function PlayerPage() {
       }
 
       setInputValue(startId);
-      await load(startId, initialResume);
+      await load(startId, initialResume, Boolean(noteId));
     })();
 
     return () => window.removeEventListener('message', onMessage);
