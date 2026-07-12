@@ -1,0 +1,60 @@
+.container {
+    margin-top: 8px;
+    width: 100%;
+    max-width: 900px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.cards { display: flex; flex-direction: column; gap: 10px; }
+
+.card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--grana);
+    border-radius: 12px;
+    transition: border-color 0.15s, box-shadow 0.15s, transform 0.05s;
+}
+
+.card:hover {
+    border-color: var(--blau);
+    border-left-color: var(--blau);
+    box-shadow: 0 6px 18px rgba(0, 77, 152, 0.14);
+}
+
+.cardMain {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    text-decoration: none;
+    color: var(--ink);
+}
+
+.noteName { font-size: 16px; font-weight: 700; color: var(--ink); }
+
+.cardSub { font-size: 13px; font-weight: 500; color: var(--muted); }
+
+.cardDel {
+    flex: none;
+    width: 34px;
+    height: 34px;
+    border: 0;
+    border-radius: 8px;
+    background: rgba(165, 0, 68, 0.10);
+    color: var(--grana);
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.cardDel:hover { background: var(--grana); color: #fff; }
+.cardDel:disabled { opacity: 0.5; cursor: default; }
+
+.empty { color: var(--muted); font-size: 15px; }

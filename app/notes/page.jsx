@@ -4,9 +4,9 @@ import { useEffect, useState } from 'react';
 import styles from './page.module.css';
 import Topbar from '@/components/Topbar';
 import { isConfigured } from '@/lib/firebaseConfig';
-import { getUserId, listHistory, removeHistory } from '@/lib/userData';
+import { getUserId, listNotes, removeNote } from '@/lib/userData';
 
-const formatTime = (totalSeconds, showHours, cutHours) => {
+const formatTime = (totalSeconds) => {
   if (!Number.isFinite(totalSeconds) || totalSeconds < 0) {
     return '';
   }
@@ -20,14 +20,14 @@ const formatTime = (totalSeconds, showHours, cutHours) => {
     return num.length < 2 ? `0${num}` : num;
   };
 
-  if (showHours || hours >= 1) {
-    return `${cutHours ? hours : pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+  if (hours >= 1) {
+    return `${hours}:${pad(minutes)}:${pad(seconds)}`;
   }
 
   return `${pad(minutes)}:${pad(seconds)}`;
 };
 
-export default function HistoryPage() {
+export default function NotesPage() {
   const [uid, setUid] = useState('0');
   const [items, setItems] = useState([]);
   // loading | ready | error | unconfigured
@@ -44,11 +44,11 @@ export default function HistoryPage() {
 
     (async () => {
       try {
-        const hist = await listHistory(u);
-        setItems(hist);
+        const notes = await listNotes(u);
+        setItems(notes);
         setStatus('ready');
       } catch (e) {
-        console.error('Не удалось загрузить историю:', e);
+        console.error('Не удалось загрузить заметки:', e);
         setStatus('error');
       }
     })();
@@ -56,42 +56,48 @@ export default function HistoryPage() {
 
   const userQuery = uid !== '0' ? `?user=${encodeURIComponent(uid)}` : '';
 
-  const cardHref = (id) => {
+  // Клик по заметке → плеер с её данными (resume уходит postMessage'ом в iframe).
+  const noteHref = (item) => {
     const params = new URLSearchParams();
     if (uid !== '0') params.set('user', uid);
-    params.set('id', String(id));
+    params.set('id', String(item.id));
+    params.set('note', String(item.noteId));
     return `/?${params.toString()}`;
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Удалить из истории?')) return;
+  const handleDelete = async (noteId) => {
+    if (!window.confirm('Удалить заметку?')) return;
     try {
-      await removeHistory(uid, id);
-      setItems((prev) => prev.filter((it) => String(it.id) !== String(id)));
+      await removeNote(uid, noteId);
+      setItems((prev) => prev.filter((it) => it.noteId !== noteId));
     } catch (e) {
-      console.error('Не удалось удалить:', e);
+      console.error('Не удалось удалить заметку:', e);
     }
   };
 
   return (
     <>
       <Topbar
-        brand="Продолжить смотреть"
+        brand="Заметки"
         links={[
           { href: `/${userQuery}`, label: '← Плеер' },
-          { href: `/notes${userQuery}`, label: 'Заметки' },
+          { href: `/history${userQuery}`, label: 'Продолжить смотреть' },
         ]}
         uid={uid}
       />
       <div className={styles.container}>
         <div className={styles.cards}>
           {items.map((item) => (
-            <div className={styles.card} key={String(item.id)}>
-              <a className={styles.cardMain} href={cardHref(item.id)}>
-                <span>{item.serialName || `id ${item.id}`}</span>
+            <div className={styles.card} key={item.noteId}>
+              <a className={styles.cardMain} href={noteHref(item)}>
+                <span className={styles.noteName}>{item.title || 'Без названия'}</span>
+                <span className={styles.cardSub}>
+                  {item.serialName || `id ${item.id}`}
+                </span>
                 {item.season != null && item.episode != null ? (
                   <span className={styles.cardSub}>
                     {(item.isFeature ? '' : `Сезон ${item.season} · Серия ${item.episode} · `) +
+                      (item.voiceName ? `${item.voiceName} · ` : '') +
                       (item.playBack ? `Время ${formatTime(item.playBack)}` : '')}
                   </span>
                 ) : null}
@@ -100,7 +106,7 @@ export default function HistoryPage() {
                 type="button"
                 className={styles.cardDel}
                 aria-label="Удалить"
-                onClick={() => handleDelete(item.id)}
+                onClick={() => handleDelete(item.noteId)}
               >
                 ×
               </button>
@@ -109,10 +115,10 @@ export default function HistoryPage() {
         </div>
 
         {status === 'ready' && items.length === 0 ? (
-          <p className={styles.empty}>Пока ничего не смотрели.</p>
+          <p className={styles.empty}>Пока нет заметок.</p>
         ) : null}
         {status === 'error' ? (
-          <p className={styles.empty}>Не удалось загрузить историю.</p>
+          <p className={styles.empty}>Не удалось загрузить заметки.</p>
         ) : null}
         {status === 'unconfigured' ? (
           <p className={styles.empty}>Firebase не настроен.</p>

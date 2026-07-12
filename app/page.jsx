@@ -10,6 +10,8 @@ import {
   saveProgress,
   loadProgress,
   getLastWatchedId,
+  loadNote,
+  saveNote,
 } from '@/lib/userData';
 
 const BAURA_ORIGIN = 'https://baura.org';
@@ -40,6 +42,8 @@ const fetchPlayerData = async (id, season = 1, episode = 1) => {
 };
 
 const SAVE_INTERVAL = 5;
+// На сколько секунд отматываем назад время при сохранении заметки.
+const NOTE_REWIND = 5;
 
 export default function PlayerPage() {
   const iframeRef = useRef(null);
@@ -47,10 +51,17 @@ export default function PlayerPage() {
   const [title, setTitle] = useState('');
   const [uid, setUid] = useState('0');
 
+  // Модалка заметки.
+  const [noteOpen, setNoteOpen] = useState(false);
+  const [noteTitle, setNoteTitle] = useState('');
+  const [noteSaving, setNoteSaving] = useState(false);
+
   // Мутабельные значения, которые читает единственный message-listener.
   const uidRef = useRef('0');
   const currentSerialName = useRef('');
   const lastSaved = useRef(-SAVE_INTERVAL);
+  // Последний прогресс от плеера (полный объект message) — для сохранения заметки.
+  const lastProgress = useRef(null);
   // Resume: прогресс из Firebase + флаг готовности плеера. Плеер может прислать
   // «готов» и раньше, и позже загрузки прогресса — поэтому шлём, когда готовы оба.
   const pendingResume = useRef(null);
@@ -69,7 +80,8 @@ export default function PlayerPage() {
     }
   };
 
-  const load = async (rawId) => {
+  // resumeOverride — если задан (запуск из заметки), используем его вместо loadProgress.
+  const load = async (rawId, resumeOverride = null) => {
     const id = String(rawId ?? '').trim();
     if (!id) return;
 
@@ -77,12 +89,16 @@ export default function PlayerPage() {
     setTitle('');
     currentSerialName.current = '';
     lastSaved.current = -SAVE_INTERVAL;
+    lastProgress.current = null;
     pendingResume.current = null;
     playerReady.current = false;
     resumeSent.current = false;
 
-    // Прогресс для resume читаем сразу по id — не завися от baura-fetch (он может упасть).
-    if (isConfigured) {
+    // Прогресс для resume: из заметки (override) либо сохранённый по id.
+    if (resumeOverride) {
+      pendingResume.current = resumeOverride;
+      sendResumeIfReady();
+    } else if (isConfigured) {
       try {
         pendingResume.current = await loadProgress(uidRef.current, id);
         sendResumeIfReady();
@@ -125,8 +141,12 @@ export default function PlayerPage() {
         return;
       }
 
-      // Прогресс от плеера → запись минуты.
+      // Прогресс от плеера.
       if (d.id == null || typeof d.playBack !== 'number') return;
+
+      // Всегда запоминаем последний прогресс (для заметок) — до троттлинга записи.
+      lastProgress.current = d;
+
       if (!isConfigured) return;
 
       if (d.playBack - lastSaved.current < SAVE_INTERVAL && d.playBack >= lastSaved.current) return;
@@ -148,8 +168,12 @@ export default function PlayerPage() {
     window.addEventListener('message', onMessage);
 
     // Стартовый id: ?id= из URL → последний просмотренный → пусто.
+    // ?note= — запуск из заметки: её данные становятся payload для resume.
     (async () => {
-      const urlId = new URLSearchParams(window.location.search).get('id');
+      const params = new URLSearchParams(window.location.search);
+      const urlId = params.get('id');
+      const noteId = params.get('note');
+
       let startId = '';
       if (urlId) {
         startId = urlId;
@@ -161,20 +185,71 @@ export default function PlayerPage() {
           console.error('Не удалось получить последний просмотр:', e);
         }
       }
+
+      let initialResume = null;
+      if (noteId && isConfigured) {
+        try {
+          initialResume = await loadNote(u, noteId);
+          if (initialResume?.id != null) startId = String(initialResume.id);
+        } catch (e) {
+          console.error('Не удалось прочитать заметку:', e);
+        }
+      }
+
       setInputValue(startId);
-      await load(startId);
+      await load(startId, initialResume);
     })();
 
     return () => window.removeEventListener('message', onMessage);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const openNote = () => {
+    setNoteTitle('');
+    setNoteOpen(true);
+  };
+
+  const submitNote = async () => {
+    const p = lastProgress.current;
+    if (!p) {
+      window.alert('Сначала запустите просмотр — нужно время из плеера.');
+      return;
+    }
+    if (!isConfigured) return;
+
+    setNoteSaving(true);
+    try {
+      await saveNote(uidRef.current, {
+        id: p.id,
+        serialName: currentSerialName.current,
+        season: p.season,
+        episode: p.episode,
+        voiceId: p.voiceId,
+        voiceName: p.voiceName,
+        spec_ep: p.spec_ep,
+        // Время = последнее из плеера минус NOTE_REWIND секунд.
+        playBack: Math.max(0, p.playBack - NOTE_REWIND),
+        title: noteTitle.trim(),
+        savedAt: Date.now(),
+      });
+      setNoteOpen(false);
+    } catch (e) {
+      console.error('Не удалось сохранить заметку:', e);
+      window.alert('Не удалось сохранить заметку.');
+    } finally {
+      setNoteSaving(false);
+    }
+  };
+
   const userQuery = uid !== '0' ? `?user=${encodeURIComponent(uid)}` : '';
 
   return (
     <>
       <Topbar
-        link={{ href: `/history${userQuery}`, label: 'Продолжить смотреть' }}
+        links={[
+          { href: `/history${userQuery}`, label: 'Продолжить смотреть' },
+          { href: `/notes${userQuery}`, label: 'Заметки' },
+        ]}
         uid={uid}
       />
       <div className={styles.container}>
@@ -205,7 +280,45 @@ export default function PlayerPage() {
             onClick={() => load(inputValue)}
           />
         </div>
+        <button className={styles.noteBtn} type="button" onClick={openNote}>
+          Заметка
+        </button>
       </div>
+
+      {noteOpen ? (
+        <div className={styles.overlay} onClick={() => setNoteOpen(false)}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <h2 className={styles.modalTitle}>Новая заметка</h2>
+            <input
+              className={styles.input}
+              type="text"
+              placeholder="Название заметки"
+              aria-label="Название заметки"
+              value={noteTitle}
+              autoFocus
+              onChange={(e) => setNoteTitle(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') submitNote(); }}
+            />
+            <div className={styles.modalActions}>
+              <button
+                className={styles.modalCancel}
+                type="button"
+                onClick={() => setNoteOpen(false)}
+              >
+                Отмена
+              </button>
+              <button
+                className={styles.modalSave}
+                type="button"
+                onClick={submitNote}
+                disabled={noteSaving}
+              >
+                Сохранить
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </>
   );
 }

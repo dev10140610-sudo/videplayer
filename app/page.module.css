@@ -76,3 +76,87 @@
 
 .button:hover { filter: brightness(1.08); }
 .button:active { filter: brightness(0.94); }
+
+/* Кнопка «Заметка» под поиском (второстепенная, контурная) */
+.noteBtn {
+    align-self: flex-start;
+    padding: 10px 18px;
+    font-size: 15px;
+    font-weight: 700;
+    border: 2px solid var(--blau);
+    border-radius: 10px;
+    background: transparent;
+    color: var(--blau);
+    cursor: pointer;
+}
+
+.noteBtn:hover { background: rgba(0, 77, 152, 0.08); }
+.noteBtn:active { background: rgba(0, 77, 152, 0.15); }
+
+/* Модалка заметки */
+.overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: rgba(18, 33, 59, 0.55);
+}
+
+.modal {
+    width: 100%;
+    max-width: 420px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 20px;
+    background: var(--paper);
+    border-radius: 14px;
+    border-top: 4px solid transparent;
+    background-image: linear-gradient(var(--paper), var(--paper)), var(--blaugrana);
+    background-origin: border-box;
+    background-clip: padding-box, border-box;
+    box-shadow: 0 20px 50px rgba(18, 33, 59, 0.35);
+}
+
+.modalTitle {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--blau);
+}
+
+.modalActions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+.modalCancel,
+.modalSave {
+    padding: 10px 18px;
+    font-size: 15px;
+    font-weight: 700;
+    border-radius: 10px;
+    cursor: pointer;
+}
+
+.modalCancel {
+    border: 1px solid var(--line);
+    background: var(--paper);
+    color: var(--ink);
+}
+
+.modalCancel:hover { background: #f1f3f8; }
+
+.modalSave {
+    border: 0;
+    color: #fff;
+    background: var(--blaugrana);
+    box-shadow: 0 4px 14px rgba(165, 0, 68, 0.28);
+}
+
+.modalSave:hover { filter: brightness(1.08); }
+.modalSave:disabled { opacity: 0.6; cursor: default; }
