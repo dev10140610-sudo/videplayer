@@ -98,7 +98,7 @@ export default function NotesPage() {
         brand="Заметки"
         links={[
           { href: `/${userQuery}`, label: '← Плеер' },
-          { href: `/history${userQuery}`, label: 'Продолжить смотреть' },
+          { href: `/history${userQuery}`, label: 'История' },
         ]}
         uid={uid}
       />

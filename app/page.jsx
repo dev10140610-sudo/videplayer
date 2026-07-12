@@ -279,7 +279,7 @@ export default function PlayerPage() {
     <>
       <Topbar
         links={[
-          { href: `/history${userQuery}`, label: 'Продолжить смотреть' },
+          { href: `/history${userQuery}`, label: 'История' },
           { href: notesHref, label: 'Заметки' },
         ]}
         uid={uid}

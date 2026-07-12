@@ -34,6 +34,8 @@
     color: #fff;
     text-decoration: none;
     font-weight: 600;
+    padding: 4px 3px 5px 3px;
+    border-radius: 5px;
 }
 
 .navLink:hover,
@@ -43,6 +45,7 @@
 }
 
 .badge {
+    white-space: nowrap;
     font-size: 14px;
     color: #fff;
     background: rgba(255, 255, 255, 0.16);

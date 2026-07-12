@@ -76,7 +76,7 @@ export default function HistoryPage() {
   return (
     <>
       <Topbar
-        brand="Продолжить смотреть"
+        brand="История"
         links={[
           { href: `/${userQuery}`, label: '← Плеер' },
           { href: `/notes${userQuery}`, label: 'Заметки' },
