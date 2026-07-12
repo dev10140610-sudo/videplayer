@@ -50,6 +50,8 @@ export default function PlayerPage() {
   const [inputValue, setInputValue] = useState('');
   const [title, setTitle] = useState('');
   const [uid, setUid] = useState('0');
+  // id сериала, который сейчас загружен в iframe (для ссылки/сохранения заметок).
+  const [currentId, setCurrentId] = useState('');
 
   // Модалка заметки.
   const [noteOpen, setNoteOpen] = useState(false);
@@ -58,6 +60,7 @@ export default function PlayerPage() {
 
   // Мутабельные значения, которые читает единственный message-listener.
   const uidRef = useRef('0');
+  const currentIdRef = useRef('');
   const currentSerialName = useRef('');
   const lastSaved = useRef(-SAVE_INTERVAL);
   // Последний прогресс от плеера (полный объект message) — для сохранения заметки.
@@ -84,6 +87,11 @@ export default function PlayerPage() {
   const load = async (rawId, resumeOverride = null) => {
     const id = String(rawId ?? '').trim();
     if (!id) return;
+
+    // Запоминаем текущий сериал (для ссылки/сохранения заметок + для страницы заметок).
+    currentIdRef.current = id;
+    setCurrentId(id);
+    try { window.localStorage.setItem('vp:lastId', id); } catch { /* приватный режим */ }
 
     iframeRef.current.src = buildIframeUrl(id); // плеер polivai (шлёт прогресс наружу)
     setTitle('');
@@ -187,9 +195,9 @@ export default function PlayerPage() {
       }
 
       let initialResume = null;
-      if (noteId && isConfigured) {
+      if (noteId && urlId && isConfigured) {
         try {
-          initialResume = await loadNote(u, noteId);
+          initialResume = await loadNote(u, urlId, noteId);
           if (initialResume?.id != null) startId = String(initialResume.id);
         } catch (e) {
           console.error('Не удалось прочитать заметку:', e);
@@ -211,7 +219,8 @@ export default function PlayerPage() {
 
   const submitNote = async () => {
     const p = lastProgress.current;
-    if (!p) {
+    const serialId = currentIdRef.current;
+    if (!serialId || !p) {
       window.alert('Сначала запустите просмотр — нужно время из плеера.');
       return;
     }
@@ -219,8 +228,8 @@ export default function PlayerPage() {
 
     setNoteSaving(true);
     try {
-      await saveNote(uidRef.current, {
-        id: p.id,
+      await saveNote(uidRef.current, serialId, {
+        id: serialId,
         serialName: currentSerialName.current,
         season: p.season,
         episode: p.episode,
@@ -243,12 +252,18 @@ export default function PlayerPage() {
 
   const userQuery = uid !== '0' ? `?user=${encodeURIComponent(uid)}` : '';
 
+  // Ссылка на заметки несёт текущий id iframe — показываются заметки этого сериала.
+  const notesParams = new URLSearchParams();
+  if (uid !== '0') notesParams.set('user', uid);
+  if (currentId) notesParams.set('id', currentId);
+  const notesHref = notesParams.toString() ? `/notes?${notesParams.toString()}` : '/notes';
+
   return (
     <>
       <Topbar
         links={[
           { href: `/history${userQuery}`, label: 'Продолжить смотреть' },
-          { href: `/notes${userQuery}`, label: 'Заметки' },
+          { href: notesHref, label: 'Заметки' },
         ]}
         uid={uid}
       />

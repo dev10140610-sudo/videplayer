@@ -29,8 +29,9 @@ const formatTime = (totalSeconds) => {
 
 export default function NotesPage() {
   const [uid, setUid] = useState('0');
+  const [serialId, setSerialId] = useState('');
   const [items, setItems] = useState([]);
-  // loading | ready | error | unconfigured
+  // loading | ready | error | unconfigured | noserial
   const [status, setStatus] = useState('loading');
 
   useEffect(() => {
@@ -42,9 +43,23 @@ export default function NotesPage() {
       return;
     }
 
+    // id сериала: из URL (?id=) либо последний, что стоял в iframe (localStorage).
+    const params = new URLSearchParams(window.location.search);
+    let sid = params.get('id');
+    if (!sid) {
+      try { sid = window.localStorage.getItem('vp:lastId') || ''; } catch { sid = ''; }
+    }
+    sid = (sid || '').trim();
+    setSerialId(sid);
+
+    if (!sid) {
+      setStatus('noserial');
+      return;
+    }
+
     (async () => {
       try {
-        const notes = await listNotes(u);
+        const notes = await listNotes(u, sid);
         setItems(notes);
         setStatus('ready');
       } catch (e) {
@@ -60,7 +75,7 @@ export default function NotesPage() {
   const noteHref = (item) => {
     const params = new URLSearchParams();
     if (uid !== '0') params.set('user', uid);
-    params.set('id', String(item.id));
+    params.set('id', String(serialId));
     params.set('note', String(item.noteId));
     return `/?${params.toString()}`;
   };
@@ -68,12 +83,14 @@ export default function NotesPage() {
   const handleDelete = async (noteId) => {
     if (!window.confirm('Удалить заметку?')) return;
     try {
-      await removeNote(uid, noteId);
+      await removeNote(uid, serialId, noteId);
       setItems((prev) => prev.filter((it) => it.noteId !== noteId));
     } catch (e) {
       console.error('Не удалось удалить заметку:', e);
     }
   };
+
+  const serialLabel = items[0]?.serialName || (serialId ? `id ${serialId}` : '');
 
   return (
     <>
@@ -86,14 +103,13 @@ export default function NotesPage() {
         uid={uid}
       />
       <div className={styles.container}>
+        {serialLabel ? <div className={styles.serial}>{serialLabel}</div> : null}
+
         <div className={styles.cards}>
           {items.map((item) => (
             <div className={styles.card} key={item.noteId}>
               <a className={styles.cardMain} href={noteHref(item)}>
                 <span className={styles.noteName}>{item.title || 'Без названия'}</span>
-                <span className={styles.cardSub}>
-                  {item.serialName || `id ${item.id}`}
-                </span>
                 {item.season != null && item.episode != null ? (
                   <span className={styles.cardSub}>
                     {(item.isFeature ? '' : `Сезон ${item.season} · Серия ${item.episode} · `) +
@@ -115,7 +131,10 @@ export default function NotesPage() {
         </div>
 
         {status === 'ready' && items.length === 0 ? (
-          <p className={styles.empty}>Пока нет заметок.</p>
+          <p className={styles.empty}>У этого сериала пока нет заметок.</p>
+        ) : null}
+        {status === 'noserial' ? (
+          <p className={styles.empty}>Сначала откройте сериал в плеере.</p>
         ) : null}
         {status === 'error' ? (
           <p className={styles.empty}>Не удалось загрузить заметки.</p>

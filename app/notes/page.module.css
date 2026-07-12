@@ -7,6 +7,12 @@
     gap: 16px;
 }
 
+.serial {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--blau);
+}
+
 .cards { display: flex; flex-direction: column; gap: 10px; }
 
 .card {
