@@ -1,0 +1,54 @@
+.topbar {
+    width: 100%;
+    max-width: 900px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 12px 16px;
+    border-radius: 14px;
+    background: var(--blaugrana);
+    border-bottom: 3px solid rgba(255, 255, 255, 0.25);
+    box-shadow: 0 8px 24px rgba(18, 33, 59, 0.18);
+    color: #fff;
+}
+
+.brand {
+    font-weight: 800;
+    font-size: 18px;
+    letter-spacing: 0.3px;
+    color: #fff;
+    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
+}
+
+.right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.navLink {
+    font-size: 14px;
+    color: #fff;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.navLink:hover,
+.navLink:focus {
+    color: #dadada;
+    text-decoration: none;
+}
+
+.badge {
+    font-size: 14px;
+    color: #fff;
+    background: rgba(255, 255, 255, 0.16);
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.badgeId { font-weight: 700; color: #fff; }
