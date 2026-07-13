@@ -76,6 +76,9 @@ export default function PlayerPage() {
   // Grace-период после захода по заметке: пока true — прогресс не пишем.
   const noteLaunch = useRef(false);
   const noteBaseline = useRef(null);
+  // Поколение загрузки: async-продолжения устаревшего load() отбрасываются
+  // (защита от гонки быстрого-старта из кэша и повторных вызовов load).
+  const loadGen = useRef(0);
 
   const sendResumeIfReady = () => {
     if (resumeSent.current || !playerReady.current) return;
@@ -95,14 +98,19 @@ export default function PlayerPage() {
     const id = String(rawId ?? '').trim();
     if (!id) return;
 
+    const gen = ++loadGen.current; // метка этой загрузки
+
     // Запоминаем текущий сериал (для ссылки/сохранения заметок + для страницы заметок).
     currentIdRef.current = id;
     setCurrentId(id);
     try { window.localStorage.setItem('vp:lastId', id); } catch { /* приватный режим */ }
 
     iframeRef.current.src = buildIframeUrl(id); // плеер polivai (шлёт прогресс наружу)
-    setTitle('');
-    currentSerialName.current = '';
+    // Название из кэша — показываем мгновенно, обновим после baura-fetch.
+    let cachedName = '';
+    try { cachedName = window.localStorage.getItem(`vp:title:${id}`) || ''; } catch { /* приватный режим */ }
+    currentSerialName.current = cachedName;
+    setTitle(cachedName);
     lastSaved.current = -SAVE_INTERVAL;
     lastProgress.current = null;
     pendingResume.current = null;
@@ -117,7 +125,9 @@ export default function PlayerPage() {
       sendResumeIfReady();
     } else if (isConfigured) {
       try {
-        pendingResume.current = await loadProgress(uidRef.current, id);
+        const prog = await loadProgress(uidRef.current, id);
+        if (loadGen.current !== gen) return; // началась новая загрузка — прерываем
+        pendingResume.current = prog;
         sendResumeIfReady();
       } catch (e) {
         console.error('Не удалось прочитать прогресс:', e);
@@ -127,9 +137,14 @@ export default function PlayerPage() {
     // Название сериала — отдельно, не блокирует resume если baura недоступна.
     try {
       const playerData = await fetchPlayerData(id);
+      if (loadGen.current !== gen) return; // началась новая загрузка — прерываем
       const cur = playerData.playlist?.current;
       currentSerialName.current = cur?.serialName ?? '';
       setTitle(currentSerialName.current);
+      // Обновляем кэш названия только если изменилось.
+      if (currentSerialName.current && currentSerialName.current !== cachedName) {
+        try { window.localStorage.setItem(`vp:title:${id}`, currentSerialName.current); } catch { /* ignore */ }
+      }
 
       if (isConfigured && cur?.id != null) {
         await recordHistory(uidRef.current, { id: cur.id, serialName: currentSerialName.current });
@@ -192,37 +207,56 @@ export default function PlayerPage() {
     };
     window.addEventListener('message', onMessage);
 
-    // Стартовый id: ?id= из URL → последний просмотренный → пусто.
-    // ?note= — запуск из заметки: её данные становятся payload для resume.
+    // Стартовый id: ?note= (заметка) → ?id= → мгновенно из localStorage + сверка с бэком.
     (async () => {
       const params = new URLSearchParams(window.location.search);
       const urlId = params.get('id');
       const noteId = params.get('note');
 
-      let startId = '';
+      // Заход по заметке — грузим её данные как resume-payload.
+      if (noteId && urlId) {
+        let initialResume = null;
+        if (isConfigured) {
+          try {
+            initialResume = await loadNote(u, urlId, noteId);
+          } catch (e) {
+            console.error('Не удалось прочитать заметку:', e);
+          }
+        }
+        const startId = initialResume?.id != null ? String(initialResume.id) : urlId;
+        setInputValue(startId);
+        await load(startId, initialResume, true);
+        return;
+      }
+
+      // Явный ?id= — грузим сразу.
       if (urlId) {
-        startId = urlId;
-      } else if (isConfigured) {
+        setInputValue(urlId);
+        await load(urlId);
+        return;
+      }
+
+      // Без id: мгновенный старт из localStorage, бэк проверяем фоном.
+      let cachedId = '';
+      try { cachedId = (window.localStorage.getItem('vp:lastId') || '').trim(); } catch { /* приватный режим */ }
+      if (cachedId) {
+        setInputValue(cachedId);
+        load(cachedId); // не ждём — iframe стартует мгновенно
+      }
+
+      if (isConfigured) {
         try {
           const last = await getLastWatchedId(u);
-          if (last) startId = String(last);
+          const lastStr = last != null ? String(last) : '';
+          // Бэк отличается от кэша — перегружаем на актуальный id.
+          if (lastStr && lastStr !== cachedId) {
+            setInputValue(lastStr);
+            await load(lastStr);
+          }
         } catch (e) {
           console.error('Не удалось получить последний просмотр:', e);
         }
       }
-
-      let initialResume = null;
-      if (noteId && urlId && isConfigured) {
-        try {
-          initialResume = await loadNote(u, urlId, noteId);
-          if (initialResume?.id != null) startId = String(initialResume.id);
-        } catch (e) {
-          console.error('Не удалось прочитать заметку:', e);
-        }
-      }
-
-      setInputValue(startId);
-      await load(startId, initialResume, Boolean(noteId));
     })();
 
     return () => window.removeEventListener('message', onMessage);

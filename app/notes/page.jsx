@@ -5,6 +5,9 @@ import styles from './page.module.css';
 import Topbar from '@/components/Topbar';
 import { isConfigured } from '@/lib/firebaseConfig';
 import { getUserId, listNotes, removeNote } from '@/lib/userData';
+import { readCacheRaw, writeCache } from '@/lib/cache';
+
+const cacheKey = (uid, serialId) => `vp:notes:${uid}:${serialId}`;
 
 const formatTime = (totalSeconds) => {
   if (!Number.isFinite(totalSeconds) || totalSeconds < 0) {
@@ -57,14 +60,27 @@ export default function NotesPage() {
       return;
     }
 
+    // Мгновенно из кэша, затем сверка с бэком.
+    const key = cacheKey(u, sid);
+    const cachedRaw = readCacheRaw(key);
+    if (cachedRaw) {
+      try {
+        setItems(JSON.parse(cachedRaw));
+        setStatus('ready');
+      } catch { /* битый кэш — игнорируем */ }
+    }
+
     (async () => {
       try {
         const notes = await listNotes(u, sid);
-        setItems(notes);
+        if (JSON.stringify(notes) !== cachedRaw) {
+          setItems(notes);
+          writeCache(key, notes);
+        }
         setStatus('ready');
       } catch (e) {
         console.error('Не удалось загрузить заметки:', e);
-        setStatus('error');
+        if (!cachedRaw) setStatus('error');
       }
     })();
   }, []);
@@ -84,7 +100,11 @@ export default function NotesPage() {
     if (!window.confirm('Удалить заметку?')) return;
     try {
       await removeNote(uid, serialId, noteId);
-      setItems((prev) => prev.filter((it) => it.noteId !== noteId));
+      setItems((prev) => {
+        const next = prev.filter((it) => it.noteId !== noteId);
+        writeCache(cacheKey(uid, serialId), next);
+        return next;
+      });
     } catch (e) {
       console.error('Не удалось удалить заметку:', e);
     }

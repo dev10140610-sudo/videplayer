@@ -5,6 +5,9 @@ import styles from './page.module.css';
 import Topbar from '@/components/Topbar';
 import { isConfigured } from '@/lib/firebaseConfig';
 import { getUserId, listHistory, removeHistory } from '@/lib/userData';
+import { readCacheRaw, writeCache } from '@/lib/cache';
+
+const cacheKey = (uid) => `vp:history:${uid}`;
 
 const formatTime = (totalSeconds, showHours, cutHours) => {
   if (!Number.isFinite(totalSeconds) || totalSeconds < 0) {
@@ -42,14 +45,28 @@ export default function HistoryPage() {
       return;
     }
 
+    // Мгновенно из кэша, затем сверка с бэком.
+    const key = cacheKey(u);
+    const cachedRaw = readCacheRaw(key);
+    if (cachedRaw) {
+      try {
+        setItems(JSON.parse(cachedRaw));
+        setStatus('ready');
+      } catch { /* битый кэш — игнорируем */ }
+    }
+
     (async () => {
       try {
         const hist = await listHistory(u);
-        setItems(hist);
+        // Перерендер + обновление кэша только если данные изменились.
+        if (JSON.stringify(hist) !== cachedRaw) {
+          setItems(hist);
+          writeCache(key, hist);
+        }
         setStatus('ready');
       } catch (e) {
         console.error('Не удалось загрузить историю:', e);
-        setStatus('error');
+        if (!cachedRaw) setStatus('error'); // есть кэш — оставляем его
       }
     })();
   }, []);
@@ -67,7 +84,11 @@ export default function HistoryPage() {
     if (!window.confirm('Удалить из истории?')) return;
     try {
       await removeHistory(uid, id);
-      setItems((prev) => prev.filter((it) => String(it.id) !== String(id)));
+      setItems((prev) => {
+        const next = prev.filter((it) => String(it.id) !== String(id));
+        writeCache(cacheKey(uid), next);
+        return next;
+      });
     } catch (e) {
       console.error('Не удалось удалить:', e);
     }
