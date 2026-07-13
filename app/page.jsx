@@ -20,7 +20,7 @@ const PLAYER_ORIGIN = 'https://polivai.xyz';
 
 // URL плеера для iframe.
 const buildIframeUrl = (id) =>
-  `${PLAYER_ORIGIN}/?dev=2&id=${encodeURIComponent(id)}`;
+  `${PLAYER_ORIGIN}/?devvv=2&id=${encodeURIComponent(id)}`;
 
 // URL страницы baura — только чтобы вытащить название сериала (playerData).
 const buildPageUrl = (id, season = 1, episode = 1) =>
