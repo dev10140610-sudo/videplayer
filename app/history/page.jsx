@@ -5,6 +5,7 @@ import styles from './page.module.css';
 import Topbar from '@/components/Topbar';
 import { isConfigured } from '@/lib/firebaseConfig';
 import { getUserId, listHistory, removeHistory } from '@/lib/userData';
+import { NoteIcon, HomeIcon } from '@/components/icons';
 import { readCacheRaw, writeCache } from '@/lib/cache';
 
 const cacheKey = (uid) => `vp:history:${uid}`;
@@ -99,8 +100,8 @@ export default function HistoryPage() {
       <Topbar
         brand="История"
         links={[
-          { href: `/${userQuery}`, label: '← Плеер' },
-          { href: `/notes${userQuery}`, label: 'Заметки' },
+          { href: `/${userQuery}`, label: 'Плеер', icon: <HomeIcon /> },
+          { href: `/notes${userQuery}`, label: 'Заметки', icon: <NoteIcon /> },
         ]}
         uid={uid}
       />

@@ -8,7 +8,15 @@ export default function Topbar({ brand, links, uid }) {
       {brand ? <div className={styles.brand}>{brand}</div> : null}
       <nav className={styles.right}>
         {links.map((l) => (
-          <Link key={l.href} className={styles.navLink} href={l.href}>{l.label}</Link>
+          <Link
+            key={l.href}
+            className={styles.navLink}
+            href={l.href}
+            aria-label={l.label}
+            title={l.label}
+          >
+            {l.icon}
+          </Link>
         ))}
         <div className={styles.badge}>Профиль: <span className={styles.badgeId}>{uid}</span></div>
       </nav>

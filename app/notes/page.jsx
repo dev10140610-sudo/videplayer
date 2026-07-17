@@ -5,6 +5,7 @@ import styles from './page.module.css';
 import Topbar from '@/components/Topbar';
 import { isConfigured } from '@/lib/firebaseConfig';
 import { getUserId, listNotes, removeNote } from '@/lib/userData';
+import { HistoryIcon, HomeIcon } from '@/components/icons';
 import { readCacheRaw, writeCache } from '@/lib/cache';
 
 const cacheKey = (uid, serialId) => `vp:notes:${uid}:${serialId}`;
@@ -117,8 +118,8 @@ export default function NotesPage() {
       <Topbar
         brand="Заметки"
         links={[
-          { href: `/${userQuery}`, label: '← Плеер' },
-          { href: `/history${userQuery}`, label: 'История' },
+          { href: `/${userQuery}`, label: 'Плеер', icon: <HomeIcon /> },
+          { href: `/history${userQuery}`, label: 'История', icon: <HistoryIcon /> },
         ]}
         uid={uid}
       />

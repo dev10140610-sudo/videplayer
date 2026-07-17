@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import styles from './page.module.css';
 import Topbar from '@/components/Topbar';
+import { NoteIcon, HistoryIcon, ReloadIcon } from '@/components/icons';
 import { isConfigured } from '@/lib/firebaseConfig';
 import {
   getUserId,
@@ -18,9 +19,10 @@ const BAURA_ORIGIN = 'https://baura.org';
 // Плеер, который шлёт прогресс наружу через postMessage (?dev=2 включает отправку).
 const PLAYER_ORIGIN = 'https://polivai.xyz';
 
-// URL плеера для iframe.
+// URL плеера для iframe. season/episode=1 — по умолчанию первая серия
+// (resume при наличии перебьёт позицию через postMessage).
 const buildIframeUrl = (id) =>
-  `${PLAYER_ORIGIN}/?devvv=2&id=${encodeURIComponent(id)}`;
+  `${PLAYER_ORIGIN}/?devvv=2&id=${encodeURIComponent(id)}&season=1&episode=1`;
 
 // URL страницы baura — только чтобы вытащить название сериала (playerData).
 const buildPageUrl = (id, season = 1, episode = 1) =>
@@ -313,8 +315,8 @@ export default function PlayerPage() {
     <>
       <Topbar
         links={[
-          { href: `/history${userQuery}`, label: 'История' },
-          { href: notesHref, label: 'Заметки' },
+          { href: notesHref, label: 'Заметки', icon: <NoteIcon /> },
+          { href: `/history${userQuery}`, label: 'История', icon: <HistoryIcon /> },
         ]}
         uid={uid}
       />
@@ -343,8 +345,11 @@ export default function PlayerPage() {
           <button
             className={styles.button}
             type="button"
+            aria-label="Загрузить"
             onClick={() => load(inputValue)}
-          />
+          >
+            <ReloadIcon width={20} height={20} />
+          </button>
         </div>
         <button className={styles.noteBtn} type="button" onClick={openNote}>
           Заметка
