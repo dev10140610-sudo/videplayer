@@ -22,11 +22,11 @@ const PLAYER_ORIGIN = 'https://polivai.xyz';
 // URL плеера для iframe. season/episode=1 — по умолчанию первая серия
 // (resume при наличии перебьёт позицию через postMessage).
 const buildIframeUrl = (id) =>
-  `${PLAYER_ORIGIN}/?devvv=2&id=${encodeURIComponent(id)}&season=1&episode=1`;
+  `${PLAYER_ORIGIN}/?devvv=2&id=${encodeURIComponent(id)}&season=1&episode=1&dissssad=dissssad`;
 
 // URL страницы baura — только чтобы вытащить название сериала (playerData).
 const buildPageUrl = (id, season = 1, episode = 1) =>
-  `${BAURA_ORIGIN}/?season=${season}&episode=${episode}&dissssad=dissssad&id=${encodeURIComponent(id)}`;
+  `${BAURA_ORIGIN}/?season=${season}&episode=${episode}&id=${encodeURIComponent(id)}`;
 
 const fetchPlayerData = async (id, season = 1, episode = 1) => {
   const res = await fetch(buildPageUrl(id, season, episode));
