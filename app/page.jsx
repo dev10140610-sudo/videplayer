@@ -156,6 +156,25 @@ export default function PlayerPage() {
     }
   };
 
+  // Android TV: при входе в фуллскрин внутри iframe клавиатурный фокус остаётся
+  // у верхнего документа, и плеер перестаёт получать кнопки пульта. Изнутри
+  // фрейма фокус не вернуть (проверено на устройстве) - это может сделать
+  // только родительская страница.
+  const focusPlayer = () => {
+    const frame = iframeRef.current;
+    if (!frame) return;
+
+    try {
+      frame.focus({ preventScroll: true });
+    } catch {
+      frame.focus();
+    }
+
+    try {
+      frame.contentWindow?.focus();
+    } catch { /* cross-origin */ }
+  };
+
   useEffect(() => {
     const u = getUserId();
     uidRef.current = u;
@@ -172,6 +191,14 @@ export default function PlayerPage() {
       if (d.type === 'vp:ready') {
         playerReady.current = true;
         sendResumeIfReady();
+        return;
+      }
+
+      // Плеер просит вернуть клавиатурный фокус в iframe (после фуллскрина на ТВ).
+      // Серию повторов шлёт сам плеер, здесь достаточно одного вызова на сообщение.
+      if (d.type === 'vp:focus') {
+        if (event.source !== iframeRef.current?.contentWindow) return;
+        focusPlayer();
         return;
       }
 
@@ -208,6 +235,18 @@ export default function PlayerPage() {
       }).catch((e) => console.error('Не удалось записать прогресс:', e));
     };
     window.addEventListener('message', onMessage);
+
+    // Независимый триггер: при фуллскрине внутри iframe сам элемент <iframe>
+    // становится фуллскрин-элементом и в этом документе тоже.
+    const focusTimers = [];
+    const onFullscreenChange = () => {
+      focusPlayer();
+      [100, 300, 700, 1500].forEach((ms) =>
+        focusTimers.push(setTimeout(focusPlayer, ms)),
+      );
+    };
+    document.addEventListener('fullscreenchange', onFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', onFullscreenChange);
 
     // Стартовый id: ?note= (заметка) → ?id= → мгновенно из localStorage + сверка с бэком.
     (async () => {
@@ -261,7 +300,12 @@ export default function PlayerPage() {
       }
     })();
 
-    return () => window.removeEventListener('message', onMessage);
+    return () => {
+      window.removeEventListener('message', onMessage);
+      document.removeEventListener('fullscreenchange', onFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', onFullscreenChange);
+      focusTimers.forEach(clearTimeout);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
