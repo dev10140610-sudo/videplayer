@@ -248,6 +248,25 @@ export default function PlayerPage() {
     document.addEventListener('fullscreenchange', onFullscreenChange);
     document.addEventListener('webkitfullscreenchange', onFullscreenChange);
 
+    // В фуллскрине на ТВ клавиши остаются у этого документа и до iframe не
+    // доходят (фокусом не лечится, проверено). Пересылаем их в плеер сами.
+    const REMOTE_KEYS = ['0', '1', '2', '3', '4', '5', '6', '8'];
+    const onKeyDown = (event) => {
+      const key = event.key || event.code;
+      if (!REMOTE_KEYS.includes(key)) return;
+
+      // не мешаем вводу id и названия заметки
+      const tag = document.activeElement?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+
+      const frame = iframeRef.current;
+      if (!frame?.contentWindow) return;
+
+      event.preventDefault();
+      frame.contentWindow.postMessage({ type: 'vp:key', key }, PLAYER_ORIGIN);
+    };
+    window.addEventListener('keydown', onKeyDown);
+
     // Стартовый id: ?note= (заметка) → ?id= → мгновенно из localStorage + сверка с бэком.
     (async () => {
       const params = new URLSearchParams(window.location.search);
@@ -304,6 +323,7 @@ export default function PlayerPage() {
       window.removeEventListener('message', onMessage);
       document.removeEventListener('fullscreenchange', onFullscreenChange);
       document.removeEventListener('webkitfullscreenchange', onFullscreenChange);
+      window.removeEventListener('keydown', onKeyDown);
       focusTimers.forEach(clearTimeout);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
