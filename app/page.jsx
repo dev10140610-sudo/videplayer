@@ -265,7 +265,7 @@ export default function PlayerPage() {
       event.preventDefault();
       frame.contentWindow.postMessage({ type: 'vp:key', key }, PLAYER_ORIGIN);
     };
-    window.addEventListener('keydown', onKeyDown);
+    document.addEventListener('keydown', onKeyDown);
 
     // Стартовый id: ?note= (заметка) → ?id= → мгновенно из localStorage + сверка с бэком.
     (async () => {
