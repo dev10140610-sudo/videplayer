@@ -15,7 +15,6 @@ import {
   saveNote,
 } from '@/lib/userData';
 
-const BAURA_ORIGIN = 'https://baura.org';
 // Плеер, который шлёт прогресс наружу через postMessage (?dev=2 включает отправку).
 const PLAYER_ORIGIN = 'https://polivai.xyz';
 
@@ -24,12 +23,8 @@ const PLAYER_ORIGIN = 'https://polivai.xyz';
 const buildIframeUrl = (id) =>
   `${PLAYER_ORIGIN}/?devvv=2&id=${encodeURIComponent(id)}&season=1&episode=1&dissssad=dissssad`;
 
-// URL страницы baura — только чтобы вытащить название сериала (playerData).
-const buildPageUrl = (id, season = 1, episode = 1) =>
-  `${BAURA_ORIGIN}/?season=${season}&episode=${episode}&id=${encodeURIComponent(id)}`;
-
 const fetchPlayerData = async (id, season = 1, episode = 1) => {
-  const res = await fetch(buildPageUrl(id, season, episode));
+  const res = await fetch(buildIframeUrl(id, season, episode));
   if (!res.ok) {
     throw new Error(`baura.org ответил ${res.status}`);
   }
